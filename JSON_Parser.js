@@ -13,22 +13,8 @@ function ParseBoolean (input) {
 }
 
 function ParseNumber (input) {
-  let str = input.split('')
-  let sIndex = 0
-  let number = ''
-  for (let s of str) {
-    if (!isNaN(s) || s === '.' || s === '-') {
-      number += s
-      sIndex++
-    } else if (s === 'e' || s === 'E') {
-      number += s
-      sIndex++
-    }
-  }
-  if (number.charAt(sIndex - 1) === 'e' || number.charAt(sIndex - 1) === 'E') {
-    number = number.substr(0, number.length - 1).trim()
-    sIndex--
-  }
+  let sIndex = input.indexOf(` `)
+  let number = input.split(` `)[0]
 
   let re = /^-?[1-9]+[0-9]*$|^0$|^-?[0-9][1-9]*.[0-9]$|^-?[0-9][1-9]*.[0-9]+e-?[1-9]+/
   let result = re.test(number)
@@ -42,8 +28,25 @@ function ParseNumber (input) {
     } else {
       n = Number(number)
     }
-    return n + ' ' + input.substr(sIndex, input.length)
+    return n + input.substr(sIndex)
   } else return null
+}
+
+function ParseString (input) {
+  let str = input.split(` `)[0]
+  let re = /"([^"\\]*(\\"|\\|\/|b|f|n|r|n|r|t|(u[0-9a-zA-Z]{4}))*)+"/
+  let result = re.test(input)
+  if (result) {
+    return str.join('') + input.substr(input.indexOf(` `))
+  } else return null
+}
+
+function ParseArray (input) {
+  return input
+}
+
+function ParseObject (input) {
+  return input
 }
 
 function Parse () {
@@ -58,8 +61,23 @@ function Parse () {
   }
 
   console.log('number Parser')
-  for (let s of ['0 test', '00 test', '1 test', '12245 test', '-1 test', '-3245 test', '0.0 test', '1. test', '0.1 test', '00.1 test', '.0 test', '.12 test', '1.2 test', '-1.0 test', '-1.2 test', '102 test', 'abc test', '1e2 test', '-1e2 test', '1.2e-2 test', '-1.2e-2 test']) {
+  for (let s of ['0 test', '00 test', '1 test', '12245 test', '-1 test', '-3245 test', '0.0 test', '1. test', '0.1 test', '00.1 test', '.0 test', '.12 test', '1.2 test', '-1.0 test', '-1.2 test', '102 test', 'abc test', '1e2 test', '-1e2 test', '1.2e-2 test', '-1.2e-2 test', '-1.2e- test', '-1.2e- test', 'test 123']) {
     console.log(s + ': ' + ParseNumber(s))
+  }
+
+  console.log('string Parser')
+  for (let s of ['"a12zr" test', 'aBc test', '"a\nd" test', '"1245" test', '1245 test', '"-1245" test', '"-ab" test']) {
+    console.log(s + ': ' + ParseString(s))
+  }
+
+  console.log('Array Parser')
+  for (let s of []) {
+    console.log(s + ': ' + ParseArray(s))
+  }
+
+  console.log('Object Parser')
+  for (let s of []) {
+    console.log(s + ': ' + ParseObject(s))
   }
 }
 
