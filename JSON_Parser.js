@@ -24,12 +24,25 @@ function testParser () {
   })
 }
 
-// function Parser () {
-
 function parseValue (input) {
-  let result
-  result = parseObject(input) || parseArray(input) || parseString(input) || parseNumber(input) || parseNull(input) || parseBoolean(input)
+  // let result
+  // result = parseObject(input) || parseArray(input) || parseString(input) || parseNumber(input) || parseNull(input) || parseBoolean(input)
+  // return result
+  return Parserfactory(input)
+}
+
+function Parserfactory (input) {
+  var parsers = [parseObject, parseArray, parseString, parseNumber, parseNull, parseBoolean]
+  let result 
+  parsers.forEach(function (f) {
+    let res = f(input)
+    if(res !== null)
+      result = res
+  })
   return result
+
+  // let result = parseObject(input) || parseArray(input) || parseString(input) || parseNumber(input) || parseNull(input) || parseBoolean(input)
+  // return result
 }
 
 function parseNull (input) {
