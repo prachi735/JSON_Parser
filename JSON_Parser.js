@@ -1,19 +1,39 @@
-function ParseNull (input) {
-  if (input.substr(0, 4) === 'null') {
-    return [null, input.substr(5, input.length)]
-  } else return null
+testParser()
+
+function testParser () {
+  let obj = `{"key1" : 1, "K2": 12.3 ,   "K3": -1.0 , "k6":1.3e2, "K8":0.0}`
+  console.log(parseValue(obj)[0])
+
+  obj = `{"key" : "ab c", "k1":"12", "k2":123,    "k3":   12, "k4":2, "k5":[1,2, [3,4], {"J":1}] , "Obj": {"k6":5} }`
+  console.log(parseValue(obj)[0])
+
+  obj = `{"card":"2","numbers":{"Conway":[1,11,21,1211,111221,312211],"Fibonacci":[0,1,1,2,3,5,8,13,21,34]}}`
+  console.log(parseValue(obj))
+
+  obj = `{"ID":null,"name":"Doe","first-name":"John","age":25,"hobbies":["reading","cinema",{"sports":["volley-ball","snowboard"]}],"address":{}}`
+  console.log(parseValue(obj))
+
+  obj = `{noquotes:noquotes,"\\u must be followed by 4 digits":"\\u01A",unquoted property:unknown_value,"unescaped backslash \ ":"\ ","malformed object":{"1"}}`
+  console.log(parseValue(obj))
+
 }
 
-function ParseBoolean (input) {
-  if (input.substr(0, 4) === 'true') {
-    return 'true' + ' ' + input.substr(5, input.length)
-  } else if (input.substr(0, 5) === 'false') {
-    return [false, input.substr(6, input.length)]
-  } else return null
+function parseValue (input) {
+  let result
+  result = parseObject(input) || parseArray(input) || parseString(input) || parseNumber(input) || parseNull(input) || parseBoolean(input)
+  return result
 }
 
-function ParseNumber (input) {
-  let re = /^-?[1-9]+[0-9]*|^0|^-?[0-9][1-9]*.[0-9]|^-?[0-9][1-9]*.[0-9]+e-?[1-9]+/
+function parseNull (input) {
+  return input.startsWith('null') ? [null, input.slice(4)] : null
+}
+
+function parseBoolean (input) {
+  return input.startsWith('true') ? ['true', input.slice(4)] : (input.startsWith('false') ? ['false', input.slice(5)] : null)
+}
+
+function parseNumber (input) {
+  let re = /^-?[0-9]+[1-9]*\.[0-9]+[e]{1}-?[1-9]+|^-?\d[1-9]*\.\d?|^-?[1-9]+\d*|^0/ // |^0|^-?\d[1-9]*.\d?|^-?[0-9][1-9]*.[0-9]+e-?[1-9]+/
   let result = input.match(re)
   if (result) {
     let eIndex = result[0].indexOf('e') + result[0].indexOf('E') + 1
@@ -23,182 +43,100 @@ function ParseNumber (input) {
       let power = Number(result[0].substr(eIndex + 1))
       n = (base * 10 ** power)
     } else {
-      // n = Number(result[0])
       n = Number(result[0])
     }
-    console.log(n, input)
     return [n, input.slice(result[0].length)]
   } else return null
-
-//   let regexp = String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
-//   if (!String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)) return null
-// return [parseInt(regexp[0]), input.slice(regexp[0].length)]
 }
 
-function ParseString (input) {
-  // console.log(input)
-  // let re = /"([^"\\]*(\\"|\\|\/|b|f|n|r|n|r|t|(u[0-9a-zA-Z]{4}))*)+"/
-  // let result = re.test(input)
-  // if (result) {
-  //   return input // .substr(1, input.length - 2)
-  // } else return null
-
+function parseString (input) {
   let i = 1
-  // if (input.startsWith('"')) {
-  if (input.charAt(0) === '"') {
-    let s = ''
+  if (input.startsWith('"')) {
+    let str = ''
     while (input[i] !== '"') {
       if (input[i] === '\\') {
-        s = s + input.substr(i, 2)
+        str += input.substr(i, 2)
         i += 2
       } else {
-        s = s + input[i]
+        str += input[i]
         i++
       }
     }
-    return [s, input.slice(i + 1)]
-  } else return null
-}
-
-function ParseArray (input) {
-  let result = null
-  let arr = []
-  if (input.charAt(0) === '[') {
-    input = input.slice(1)
-    while (true) {
-      result = ParseSpace(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      result = ParseValue(input)
-      if (result) {
-        arr.push(result[0])
-        input = result[1]
-      } else break
-      result = ParseSpace(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      result = ParseComma(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      if (input.charAt('0') === ']') {
-        input = input.slice(']')
-        break
-      }
-    }
-    return [arr, input]
+    return [str, input.slice(i + 1)]
   }
   return null
 }
 
-function ParseObject (input) {
+function parseArray (input) {
+  let result
+  let arr = []
+  if (!input.startsWith('[')) {
+    return null
+  }
+  input = input.slice(1)
+  while (true) {
+    input = input.trim()
+    result = parseValue(input)
+    if (result === null) break
+    arr.push(result[0])
+    input = result[1]
+    input = input.trim()
+    result = commaParser(input)
+    if (result === null) break
+    input = result[1]
+    if (input.startsWith(']')) {
+      return null
+    }
+  }
+  input = input.trim()
+  if (input.startsWith(']')) {
+    return [arr, input.slice(1)]
+  }
+  return null
+}
+
+function parseObject (input) {
   let obj = {}
   let key = ''
-  let result = null
-
-  if (input.charAt(0) === '{') {
-    input = input.slice(1)
-    while (true) {
-      console.log('0', input)
-      result = ParseSpace(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      result = ParseString(input)
-      if (result === null) {
-        break
-      }
+  let value
+  let result
+  if (!input.startsWith('{')) return null
+  input = input.slice(1)
+  while (true) {
+    input = input.trim()
+    result = parseString(input)
+    if (result === null) break
+    else {
       key = result[0]
       input = result[1]
-      result = ParseSpace(input)
-      if (result !== null) {
-        input = result[1]
+      input = input.trim()
+      result = colonParser(input)
+      if (result === null) return null
+      input = result[1]
+      input = input.trim()
+      result = parseValue(input)
+      if (result === null) return null
+      value = result[0]
+      obj[key] = value
+      input = result[1]
+      input = input.trim()
+      result = commaParser(input)
+      if (result === null) break
+      input = result[1]
+      if (input.startsWith('}')) {
+        return null
       }
-      result = ParseColon(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      result = ParseSpace(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      result = ParseValue(input)
-      console.log('i0', input, result)
-      if (result !== null) {
-        obj[key] = result[0]
-        input = result[1]
-        console.log(input)
-      } else {
-        console.log('i1', input)
-        break
-      }
-      result = ParseSpace(input)
-      console.log('1', input)
-      if (result !== null) {
-        input = result[1]
-      }
-      console.log('2', input)
-      result = ParseComma(input)
-      if (result !== null) {
-        input = result[1]
-      }
-      console.log('3', input)
-      if (input.charAt('0') === '}') {
-        console.log('i2', input)
-        break
-      }
-      console.log('4', input)
     }
-    return [obj, input]
   }
-  return null
+  input = input.trim()
+  if (!input.startsWith('}')) return null
+  // console.log(input)
+  return [obj, input.slice(1)]
 }
 
-function Parse () {
-  let obj = `{"key1" : 1 , "Key2": 2, "Key3": 3 }`
-  // console.log(ParseObject(obj)[0])
-
-  obj = `{"key" : "ab c", "k1":"12", "k2":123, "k3":12, "k4":2,"Obj": {"k6":5} }`
-  console.log(ParseObject(obj)[0])
-
-  // obj = `{"card":"2","numbers":{"Conway":[1,11,21,1211,111221,312211],"Fibonacci":[0,1,1,2,3,5,8,13,21,34]}}`
-  // console.log(ParseObject(obj))
-
-  // obj = `{"ID":null,"name":"Doe","first-name":"John","age":25,"hobbies":["reading","cinema",{"sports":["volley-ball","snowboard"]}],"address":{}}`
-  // console.log(ParseObject(obj))
-
-  // obj = `{noquotes:noquotes,"\\u must be followed by 4 digits":"\\u01A",unquoted property:unknown_value,"unescaped backslash \ ":"\ ","malformed object":{"1"}}`
-  // console.log(ParseObject(obj))
-}
-
-Parse()
-
-// Helper functions
-// function ParseCharacter (input, ch) {
-//   console.log('Prase Char',input, ch, ch === ' ')
-//   if (ch === ' ') {
-//     console.log(input.match(/\S/))
-//     if (input.match(/\S/)) {
-//       return [null, input.slice(input.match(/\S/))]
-//     } else return null
-//   }
-//   if (input.startsWith(ch)) {
-//     return [ch, input.slice(1)]
-//   } else return null
-// }
-
-function ParseComma (input) {
+function commaParser (input) {
   return input.startsWith(',') ? [',', input.slice(1)] : null
 }
-function ParseColon (input) {
+function colonParser (input) {
   return input.startsWith(':') ? [':', input.slice(1)] : null
-}
-function ParseSpace (input) {
-  return input.match(/^[\s\n]/) ? [null, input.slice(input.match(/\S/).index)] : null
-}
-
-function ParseValue (input) {
-  return ParseObject(input) || ParseArray(input) || ParseString(input) || ParseNumber(input) || ParseNull(input) || ParseBoolean(input)
 }
