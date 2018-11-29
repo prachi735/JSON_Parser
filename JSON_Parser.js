@@ -1,21 +1,27 @@
+const fs = require('fs')
 testParser()
 
 function testParser () {
   let result = null
 
-  let testObjects = [ `{"key1" : 1, "K2": 12.3 ,   "K3": -1.0 , "k6":1.3e2, "K8":0.0}`,
-    `{"key" : "ab c", "k1":"12", "k2":123,    "k3":   12, "k4":2, "k5":[1,2, [3,4], {"J":1}] , "Obj": {"k6":5} }`,
-    `{"card":"2","numbers":{"Conway":[1,11,21,1211,111221,312211],"Fibonacci":[0,1,1,2,3,5,8,13,21,34]}}`,
-    `{"ID":null,"name":"Doe","first-name":"John","age":25,"hobbies":["reading","cinema",{"sports":["volley-ball","snowboard"]}],"address":{}}`,
-    `{noquotes:noquotes,"\\u must be followed by 4 digits":"\\u01A",unquoted property:unknown_value,"unescaped backslash \ ":"\ ","malformed object":{"1"}}`
-  ]
+  // let testObjects = [ `{"key1" : 1, "K2": 12.3 ,   "K3": -1.0 , "k6":1.3e2, "K8":0.0}`,
+  //   `{"key" : "ab c", "k1":"12", "k2":123,    "k3":   12, "k4":2, "k5":[1,2, [3,4], {"J":1}] , "Obj": {"k6":5} }`,
+  //   `{"card":"2","numbers":{"Conway":[1,11,21,1211,111221,312211],"Fibonacci":[0,1,1,2,3,5,8,13,21,34]}}`,
+  //   `{"ID":null,"name":"Doe","first-name":"John","age":25,"hobbies":["reading","cinema",{"sports":["volley-ball","snowboard"]}],"address":{}}`,
+  //   `{noquotes:noquotes,"\\u must be followed by 4 digits":"\\u01A",unquoted property:unknown_value,"unescaped backslash \ ":"\ ","malformed object":{"1"}}`
+  // ]
   // let parser = new Parser()
-  for (let obj of testObjects) {
-    result = parseValue(obj)
-    if (result !== null) {
-      console.log(result[0])
-    } else console.log(`Invalid JSON`)
-  }
+  // for (let obj of testObjects) {
+  //   result = parseValue(obj)
+  //   if (result !== null) {
+  //     console.log(result[0])
+  //   } else console.log(`Invalid JSON`)
+  // }
+
+  fs.readFile('./testJsonParser.txt', 'utf-8', function (err, data) {
+    if (err) throw err
+    console.log(parseValue(data))
+  })
 }
 
 // function Parser () {
