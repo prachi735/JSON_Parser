@@ -160,7 +160,7 @@ function Parse () {
   let obj = `{"key1" : 1 , "Key2": 2, "Key3": 3 }`
   // console.log(ParseObject(obj)[0])
 
-  obj = `{"key" : "ab c", "k1":"12", "k2":123, "k3":12, "k4":2, "k5":[1,2] "Obj": {"k6":5} }`
+  obj = `{"key" : "ab c", "k1":"12", "k2":123, "k3":12, "k4":2,"Obj": {"k6":5} }`
   console.log(ParseObject(obj)[0])
 
   // obj = `{"card":"2","numbers":{"Conway":[1,11,21,1211,111221,312211],"Fibonacci":[0,1,1,2,3,5,8,13,21,34]}}`
