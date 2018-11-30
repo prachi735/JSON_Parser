@@ -1,18 +1,47 @@
 const fs = require('fs')
 testParser()
+var errorIndex = -1
 
 function testParser () {
   fs.readFile('testJsonParser.txt', 'utf-8', function (err, data) {
     if (err) throw err
-    console.log(parseValue(data))
+    errorIndex = data.length
+    let result = parseValue(data)
+    if (result == null) {
+      console.log('Error near position', data.length - errorIndex)
+    } else {
+      console.log(result)
+    }
   })
+  // fs.readFile('testJsonParserInvalid.txt', 'utf-8', function (err, data) {
+  //   if (err) throw err
+  //   errorIndex = data.length
+  //   let result = parseValue(data)
+  //   if (result == null) {
+  //     console.log('Error near position', data.length - errorIndex)
+  //   } else {
+  //     console.log(result)
+  //   }
+  // })
+  // fs.readFile('testRedditJson.txt', 'utf-8', function (err, data) {
+  //   if (err) throw err
+  //   errorIndex = data.length
+  //   let result = parseValue(data)
+  //   if (result == null) {
+  //     console.log('Error near position', data.length - errorIndex)
+  //   } else {
+  //     console.log(result)
+  //   }
+  // })
 }
 
 function parseValue (input) {
-  return Parserfactory(input)
+  let result = Parserfactory(input)
+  return result
 }
 
 function Parserfactory (input) {
+  errorIndex = Math.min(errorIndex, input.length)
   let parsers = [parseObject, parseArray, parseString, parseNumber, parseNull, parseBoolean]
   let result = null
   parsers.forEach(function (f) {
@@ -49,9 +78,10 @@ function parseNumber (input) {
 
 function parseString (input) {
   let i = 1
+  let n = input.length
   if (input.startsWith('"')) {
     let str = ''
-    while (input[i] !== '"') {
+    while (input[i] !== '"' && i < n) {
       if (input[i] === '\\') {
         str += input.substr(i, 2)
         i += 2

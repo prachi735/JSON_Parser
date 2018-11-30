@@ -3,4 +3,6 @@
   "obj2" :   {"key" : "ab c", "k1":"12", "k2":123,    "k3":   12, "k4":2, "k5":[1,2, [3,4], {"J":1}] , "Obj": {"k6":5} },
   "obj3" :   {"card":"2","numbers":{"Conway":[1,11,21,1211,111221,312211],"Fibonacci":[0,1,1,2,3,5,8,13,21,34]}},
   "obj4" :   {"ID":null,"name":"Doe","first-name":"John","age":25,"hobbies":["reading","cinema",{"sports":["volley-ball","snowboard"]}],"address":{}}
+  "obj6" " {{noquotes:noquotes,"\\u must be followed by 4 digits":"\\u01A",unquoted property:unknown_value,"unescaped backslash \ ":"\ ","malformed object":{"1"}}
+}
 }

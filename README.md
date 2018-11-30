@@ -1,2 +1,2 @@
 # JSON_Parser
-to parse string as JSON  
+to parse string as JSON Object
