@@ -1,38 +1,25 @@
 const fs = require('fs')
 testParser()
-var errorIndex = -1
+let errorIndex = -1
 
 function testParser () {
-  fs.readFile('testJsonParser.txt', 'utf-8', function (err, data) {
-    if (err) throw err
-    errorIndex = data.length
-    let result = parseValue(data)
-    if (result == null) {
-      console.log('Error near position', data.length - errorIndex)
-    } else {
-      console.log(result)
-    }
-  })
-  // fs.readFile('testJsonParserInvalid.txt', 'utf-8', function (err, data) {
-  //   if (err) throw err
-  //   errorIndex = data.length
-  //   let result = parseValue(data)
-  //   if (result == null) {
-  //     console.log('Error near position', data.length - errorIndex)
-  //   } else {
-  //     console.log(result)
-  //   }
-  // })
-  // fs.readFile('testRedditJson.txt', 'utf-8', function (err, data) {
-  //   if (err) throw err
-  //   errorIndex = data.length
-  //   let result = parseValue(data)
-  //   if (result == null) {
-  //     console.log('Error near position', data.length - errorIndex)
-  //   } else {
-  //     console.log(result)
-  //   }
-  // })
+  testData('testCases/testJsonParser.txt')
+  testData('testCases/testJsonParserInvalid.txt')
+  testData('testCases/testRedditJson.txt')
+  testData('testCases/testTwitterJson.txt')
+
+  function testData (path) {
+    fs.readFile(path, 'utf-8', function (err, data) {
+      if (err) throw err
+      errorIndex = data.length
+      let result = parseValue(data)
+      if (result == null) {
+        console.log('Error near position', data.length - errorIndex)
+      } else {
+        console.log(result)
+      }
+    })
+  }
 }
 
 function parseValue (input) {
@@ -41,7 +28,7 @@ function parseValue (input) {
 }
 
 function Parserfactory (input) {
-  errorIndex = Math.min(errorIndex, input.length)
+  errorIndex = Math.min(errorIndex, input.trim().length)
   let parsers = [parseObject, parseArray, parseString, parseNumber, parseNull, parseBoolean]
   let result = null
   parsers.forEach(function (f) {
