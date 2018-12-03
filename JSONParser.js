@@ -3,8 +3,8 @@ testParser()
 let errorIndex = -1
 
 function testParser () {
-  // testData('testCases/singleTest.txt')
   testData('testCases/testJsonParser.txt')
+  testData('testCases/singleTest.txt')
   testData('testCases/testJsonParserInvalid.txt')
   // testData("testCases/testRedditJson.txt")
   // testData("testCases/testTwitterJson.txt")
@@ -12,12 +12,12 @@ function testParser () {
   function testData (path) {
     fs.readFile(path, 'utf-8', function (err, fileData) {
       if (err) throw err
-      // console.log(file_data)
       errorIndex = fileData.length
       let arg = { data: fileData.trim(),
         row: 1,
-        column: 1,
+        column: 0,
         update: function (d, r, c) {
+          this.data = d
           this.row = r
           this.column = c
         }
@@ -30,7 +30,7 @@ function testParser () {
   }
 }
 
-const parseValue = Parserfactory(parseObject, parseArray, parseString, parseNumber, parseNull, parseBoolean)
+const parseValue = Parserfactory(parseString, parseNumber, parseNull, parseBoolean, parseArray, parseObject)
 
 function Parserfactory (...parsers) {
   return function (input) {
@@ -38,7 +38,6 @@ function Parserfactory (...parsers) {
       errorIndex = Math.min(errorIndex, input.data.trim().length)
     }
     for (let i = 0; i < parsers.length; i++) {
-      // if(input.data)
       let res = parsers[i](input)
       if (res !== null) {
         return res
@@ -50,20 +49,17 @@ function Parserfactory (...parsers) {
 
 function parseNull (input) {
   if (input.data.startsWith('null')) {
-    input.data = input.data.slice(4)
-    input.column += 4
+    input.update(input.data.slice(4), input.row, input.column + 4)
     return [null, input]
   } else return null
 }
 
 function parseBoolean (input) {
   if (input.data.startsWith('true')) {
-    input.data = input.data.slice(4)
-    input.column += 4
+    input.update(input.data.slice(4), input.row, input.column + 4)
     return ['true', input]
   } else if (input.data.startsWith('false')) {
-    input.data = input.data.slice(5)
-    input.column += 5
+    input.update(input.data.slice(5), input.row, input.column + 5)
     return ['false', input]
   }
   return null
@@ -82,8 +78,7 @@ function parseNumber (input) {
     } else {
       n = Number(result[0])
     }
-    input.data = input.data.slice(result[0].length)
-    input.column += n.toString().length
+    input.update(input.data.slice(result[0].length), input.row, input.column + n.toString().length)
     return [n, input]
   } else return null
 }
@@ -104,8 +99,7 @@ function parseString (input) {
         i++
       }
     }
-    input.data = input.data.slice(i + 1)
-    input.column += (str.length + 2)
+    input.update(input.data.slice(i + 1), input.row, input.column + str.length + 2)
     return [str, input]
   }
   return null
@@ -115,8 +109,7 @@ function parseArray (input) {
   if (!input.data.startsWith('[')) return null
   let arr = []
   let result
-  input.column += 1
-  input.data = input.data.slice(1)
+  input.update(input.data.slice(1), input.row, input.column + 1)
   while (!input.data.startsWith(']')) {
     result = parseValue(updateNewLine(input))
     if (result === null) break
@@ -125,8 +118,7 @@ function parseArray (input) {
     result = parseCharacter(updateNewLine(input), ',')
     if (result !== null) input = result[1]
   }
-  input.column += 1
-  input.data = input.data.slice(1)
+  input.update(input.data.slice(1), input.row, input.column + 1)
   return [arr, input]
 }
 
@@ -135,9 +127,7 @@ function parseObject (input) {
   let obj = {}
   let key = ''
   let result = null
-  input.column += 1
-  input = updateNewLine(input)
-  input.data = input.data.slice(1)
+  input.update(input.data.slice(1), input.row, input.column + 1)
   while (!input.data.startsWith('}')) {
     result = parseString(updateNewLine(input))
     if (result === null) break
@@ -150,7 +140,9 @@ function parseObject (input) {
     obj[key] = result[0]
     input = result[1]
     result = parseCharacter(updateNewLine(input), ',')
-    if (result !== null) input = result[1]
+    if (result === null) break 
+    // if (result !== null) 
+    input = result[1]
   }
   input.data = input.data.slice(1)
   input.column += 1
@@ -159,23 +151,20 @@ function parseObject (input) {
 
 function parseCharacter (input, ch) {
   if (input.data.startsWith(ch)) {
-    input.data = input.data.slice(ch.length)
-    input.column += ch.length
+    input.update(input.data.slice(ch.length), input.row, input.column + ch.length)
     return [ch, input]
   } else return null
 }
 
 function parseSpace (input) {
   let n = input.data.indexOf(input.data.trim())
-  input.data = input.data.slice(n)
-  input.column += n
+  input.update(input.data.slice(n), input.row, input.column + n)
   return input
 }
 
 function updateNewLine (input) {
   if (input.data.startsWith('\n')) {
-    input.row = input.row + 1
-    input.column = 0
+    input.update(input.data, input.row + 1, 0)
   }
   input = parseSpace(input)
   return input
