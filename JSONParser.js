@@ -3,22 +3,25 @@ testParser();
 let errorIndex = -1;
 
 function testParser() {
-  testData("testCases/testJsonParser.txt");
+  testData("testCases/singleTest.txt");
+  // testData("testCases/testJsonParser.txt");
   // testData("testCases/testJsonParserInvalid.txt");
   // testData("testCases/testRedditJson.txt");
   // testData("testCases/testTwitterJson.txt");
 
   function testData(path) {
-    fs.readFile(path, "utf-8", function(err, data) {
+    fs.readFile(path, "utf-8", function(err, file_data) {
       if (err) throw err;
-      errorIndex = data.length;
-      let result = parseValue(data);
-      if (result == null) {
-        console.log("Error near position", data.length - errorIndex);
-      } else {
-        console.log(JSON.stringify(result));
-        // console.log(result);
-      }
+      // console.log(file_data)
+      errorIndex = file_data.length;
+      let arg = {data:file_data.trim(), row: 0, column:0}
+      let result = parseValue(arg);
+      if(result[1].data.length == 0)
+        console.log(result)
+      else{
+        console.log("Error at Row",result[1].row, "Column", result[1].column)
+      } 
+
     });
   }
 }
@@ -32,10 +35,13 @@ const parseValue = Parserfactory(parseObject,
 
 function Parserfactory(...parsers) {
   return function(input) {
-  errorIndex = Math.min(errorIndex, input.trim().length)
+    if(input.data !== undefined){
+      errorIndex = Math.min(errorIndex, input.data.trim().length)
+    }
     let result = null
     for (let i = 0; i < parsers.length; i++)
     {
+      // if(input.data)
       let res = parsers[i](input)
       if (res !== null) {
         return res 
@@ -46,20 +52,27 @@ function Parserfactory(...parsers) {
 }
 
 function parseNull(input) {
-  return input.startsWith("null") ? [null, input.slice(4)] : null;
+  if(input.data.startsWith("null")){
+    input.data = input.data.slice(4)
+    return [null, input]
+   } else return null
 }
 
 function parseBoolean(input) {
-  return input.startsWith("true")
-    ? ["true", input.slice(4)]
-    : input.startsWith("false")
-    ? ["false", input.slice(5)]
-    : null;
+  if(input.data.startsWith("true"))
+  {
+    input.data = input.data.slice(4)
+    return ["true", input]
+  } else if(input.data.startsWith("false")){
+    input.data = input.data.slice(5)
+    return ["false", input]
+  }
+    return null
 }
 
 function parseNumber(input) {
   let re = /^-?[0-9]+[1-9]*\.[0-9]+[e]{1}-?[1-9]+|^-?\d[1-9]*\.\d?|^-?[1-9]+\d*|^0/;
-  let result = input.match(re);
+  let result = input.data.match(re);
   if (result) {
     let eIndex = result[0].indexOf("e") + result[0].indexOf("E") + 1;
     let n = 0;
@@ -70,7 +83,8 @@ function parseNumber(input) {
     } else {
       n = Number(result[0]);
     }
-    return [n, input.slice(result[0].length)];
+    input.data = input.data.slice(result[0].length) 
+    return [n, input];
   } else return null;
 }
 
@@ -78,65 +92,82 @@ function parseString(input) {
   // TODO: implement for \u[hexa]4chars 
   //restrict the escape characters
   let i = 1;
-  let n = input.length;
-  if (input.startsWith('"')) {
+  let n = input.data.length;
+  if (input.data.startsWith('"')) {
     let str = "";
-    while (input[i] !== '"' && i < n) {
-      if (input[i] === "\\") {
-        str += input.substr(i, 2);
+    while (input.data[i] !== '"' && i < n) {
+      if (input.data[i] === "\\") {
+        str += input.data.substr(i, 2);
         i += 2;
       } else {
-        str += input[i];
+        str += input.data[i];
         i++;
       }
     }
-    return [str, input.slice(i + 1)];
+    input.data = input.data.slice(i+1)
+    return [str, input];
   }
   return null;
 }
 
 function parseArray(input) {
-  if (!input.startsWith("[")) return null;
+  if (!input.data.startsWith("[")) return null;
   let arr = [];
   let result;
-  input = input.slice(1);
-  while (!input.startsWith("]")) {
-    input = input.trim();
+  input.data = input.data.slice(1);
+  while (!input.data.startsWith("]")) {
+    input.data = input.data.trim();
     result = parseValue(input);
     if (result === null) break;
     arr.push(result[0]);
-    input = result[1].trim();
-    result = parseCharacter(input, ",");
-    if (result !== null) input = result[1];
+    input = result[1];
+    input.data = input.data.trim();
+    result = parseCharacter(input.data, ",");
+    if (result !== null) input.data = result[1];
   }
-    return [arr, input.slice(1)];
+  input.data = input.data.slice(1)
+    return [arr, input];
 }
 
 function parseObject(input) {
-  if (!input.startsWith("{")) return null;
+  if (!input.data.startsWith("{")) return null;
   let obj = {};
   let key = "";
   let result = null;
-  input = input.slice(1);
-  while (!input.startsWith("}")) {
-    input = input.trim();
+  input.data = input.data.slice(1);
+  while (!input.data.startsWith("}")) {
+    // if(input.data.startsWith("\n")) {
+    //   input.row += 1
+    //   input.column += 1
+    // }
+    input.data = input.data.trim();
     result = parseString(input);
     if (result === null) break;
     key = result[0];
-    input = result[1].trim();
-    result = parseCharacter(input, ":");
+    input= result[1];
+    input.data = input.data.trim();
+    result = parseCharacter(input.data, ":");
     if (result === null) return null;
-    input = result[1].trim();
+    input.data = result[1].trim();
     result = parseValue(input);
     if (result === null) return null;
     obj[key] = result[0];
-    input = result[1].trim();
-    result = parseCharacter(input, ",");
-    if (result !== null) input = result[1];
+    input = result[1];
+    input.data = input.data.trim();
+    result = parseCharacter(input.data, ",");
+    if (result !== null) input.data = result[1];
   }
-    return [obj, input.slice(1)];
+  input.data = input.data.slice(1)
+    return [obj, input];
 }
 
 function parseCharacter(input, ch) {
   return input.startsWith(ch) ? [ch, input.slice(1)] : null;
+}
+
+function updateInputObj (obj, data, r, c) {
+  obj.data = data
+  obj.Row = r
+  obj.Column = c
+  return obj
 }
